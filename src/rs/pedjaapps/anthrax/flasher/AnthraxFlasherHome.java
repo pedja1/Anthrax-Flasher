@@ -1,28 +1,17 @@
 package rs.pedjaapps.anthrax.flasher;
 
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStreamReader;
-import java.util.List;
-
-
-import android.os.Bundle;
-import android.app.Activity;
-import android.app.AlertDialog;
-import android.app.ProgressDialog;
-import android.content.DialogInterface;
-import android.content.Intent;
-import android.view.Menu;
-import android.view.MenuItem;
-import android.view.View;
-import android.view.View.OnClickListener;
-import android.widget.Button;
-import android.widget.EditText;
-import android.widget.TextView;
-import android.widget.Toast;
-import android.support.v4.app.NavUtils;
+import android.app.*;
+import android.content.*;
+import android.content.res.*;
+import android.os.*;
+import android.support.v4.app.*;
+import android.util.*;
+import android.view.*;
+import android.view.View.*;
+import android.widget.*;
+import java.io.*;
+import android.preference.*;
 
 public class AnthraxFlasherHome extends Activity {
 
@@ -48,7 +37,8 @@ public class AnthraxFlasherHome extends Activity {
 	private boolean mpdec;
 	private boolean reboot;
 	
-	
+	SharedPreferences preferences;
+	SharedPreferences.Editor editor;
 	
 
 	@Override
@@ -57,6 +47,8 @@ public class AnthraxFlasherHome extends Activity {
 		checkPhone();
 		setContentView(R.layout.anthrax_home);
 		// getActionBar().setDisplayHomeAsUpEnabled(true);
+		preferences = PreferenceManager.getDefaultSharedPreferences(this);
+		editor = preferences.edit();
 		kernelFile = (TextView) findViewById(R.id.textView2);
 		pickKernel = (Button) findViewById(R.id.button1);
 		setupKernel = (Button) findViewById(R.id.button2);
@@ -158,7 +150,11 @@ public class AnthraxFlasherHome extends Activity {
 						@Override
 						public void onClick(DialogInterface dialog, int which)
 						{
-							
+							boolean first = preferences.getBoolean("first_launch", false);
+							if(first==false){
+								CopyAssets();
+								Toast.makeText(getApplicationContext(), "Extracting Tools", Toast.LENGTH_LONG).show();
+							}
 						}
 					});
 				builder.setNegativeButton("Exit", new DialogInterface.OnClickListener() {
@@ -189,7 +185,7 @@ public class AnthraxFlasherHome extends Activity {
 							AnthraxFlasherHome.this.finish();
 						}
 					});
-				;
+				
 				AlertDialog alert = builder.create();
 				alert.setCanceledOnTouchOutside(false);
 				alert.setCancelable(false);
@@ -197,4 +193,45 @@ public class AnthraxFlasherHome extends Activity {
 		}
 	}
 
+	private void CopyAssets() {
+		AssetManager assetManager = getAssets();
+		String[] files = null; 
+		File file;
+		try {
+			files = assetManager.list("");
+			} catch (IOException e) {
+				Log.e("tag", e.getMessage()); 
+				} 
+				for(String filename : files) {
+					InputStream in = null;
+					OutputStream out = null;
+					try {
+						in = assetManager.open(filename);
+						file =	new File(this.getFilesDir ().getAbsolutePath()+"/"+ filename);
+						out = new FileOutputStream(file); 
+						copyFile(in, out); in.close(); 
+						Runtime.getRuntime().exec("chmod 755 " + file);
+						file.setExecutable(false);
+						in = null; 
+						out.flush(); 
+						out.close(); 
+						out = null; 
+						} 
+						catch(Exception e) {
+							Log.e("tag", e.getMessage()); 
+							}
+					} 
+					
+					editor.putBoolean("first_launch", true);
+					editor.commit();
+				} 
+							
+						
+				private void copyFile(InputStream in, OutputStream out) throws IOException { 
+				byte[] buffer = new byte[1024];
+				int read; while((read = in.read(buffer)) != -1){
+					out.write(buffer, 0, read);
+					} 
+				}
+	
 }
