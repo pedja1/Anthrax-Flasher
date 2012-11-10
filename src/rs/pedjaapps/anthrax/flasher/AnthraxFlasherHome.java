@@ -5,13 +5,15 @@ import android.app.*;
 import android.content.*;
 import android.content.res.*;
 import android.os.*;
+import android.preference.*;
 import android.support.v4.app.*;
 import android.util.*;
 import android.view.*;
 import android.view.View.*;
 import android.widget.*;
 import java.io.*;
-import android.preference.*;
+import java.util.*;
+import java.util.zip.*;
 
 public class AnthraxFlasherHome extends Activity {
 
@@ -90,12 +92,20 @@ public class AnthraxFlasherHome extends Activity {
 		switch (requestCode) {
 		case PICKFILE_RESULT_CODE:
 			if (resultCode == RESULT_OK) {
-				setupKernel.setEnabled(true);
-
-				pickKernel.setEnabled(false);
+			
 				path = data.getData().getPath();
+				String ext = path.substring((path.lastIndexOf(".") + 1), path.length());
+			if(ext.equals("zip")){
+				setupKernel.setEnabled(true);
+				pickKernel.setEnabled(false);
 				System.out.println(path);
 				kernelFile.setText(path);
+			readZip();
+			}
+			else{
+				Toast.makeText(getApplicationContext(), "Not zip archive. Please select zip file containing kernel and modules", Toast.LENGTH_LONG).show();
+			}
+			
 			}
 			break;
 		case SETUPKERNEL_RESULT_CODE:
@@ -233,5 +243,211 @@ public class AnthraxFlasherHome extends Activity {
 					out.write(buffer, 0, read);
 					} 
 				}
+				
+		public void readZip(){
+		/*	List<String> folders = new ArrayList<String>();
+			boolean kernel;
+			boolean modules;
+			try {
+				ZipFile zipFile = new ZipFile(path);
+
+				Enumeration zipEntries = zipFile.entries();
+
+				while (zipEntries.hasMoreElements()) {
+
+					//Process the name, here we just print it out
+					System.out.println(((ZipEntry)zipEntries.nextElement()).getName());
+
+					if(((ZipEntry)zipEntries.nextElement()).isDirectory()){
+						if( ((ZipEntry)zipEntries.nextElement()).getName().equals("kernel")){
+							
+						}
+					}
+				}
+
+			} catch (IOException ex) {
+				ex.printStackTrace();
+			}
+			try
+			{
+				OutputStream out = new FileOutputStream("your.file");
+		
+			FileInputStream fin = new FileInputStream(path);
+			BufferedInputStream bin = new BufferedInputStream(fin);
+			ZipInputStream zin = new ZipInputStream(bin);
+			ZipEntry ze = null;
+			while ((ze = zin.getNextEntry()) != null) {
+				if (ze.getName().equals("kernel")) {
+					byte[] buffer = new byte[8192];
+					int len;
+					while ((len = zin.read(buffer)) != -1) {
+						out.write(buffer, 0, len);
+					}
+					out.close();
+					break;
+				}
+			}
+			}
+			catch (FileNotFoundException e)
+			{}
+			catch(IOException i){}*/
+			try
+
+			{
+
+				/*
+
+				 * STEP 1 : Create directory with the name of the zip file
+
+				 * 
+
+				 * For e.g. if we are going to extract c:/demo.zip create c:/demo 
+
+				 * directory where we can extract all the zip entries
+
+				 * 
+
+				 */
+
+				File fSourceZip = new File(path);
+
+				String zipPath = "/data/data/rs.pedjaapps.anthrax.flasher/files/temp";
+
+				File temp = new File(zipPath);
+
+				temp.mkdir();
+
+				System.out.println(zipPath + " created");
+
+
+
+				/*
+
+				 * STEP 2 : Extract entries while creating required
+
+				 * sub-directories
+
+				 * 
+
+				 */
+
+				ZipFile zipFile = new ZipFile(fSourceZip);
+
+				Enumeration e = zipFile.entries();
+
+
+
+				while(e.hasMoreElements())
+
+				{
+
+					ZipEntry entry = (ZipEntry)e.nextElement();
+
+					File destinationFilePath = new File(zipPath,entry.getName());
+
+
+
+					//create directories if required.
+
+					destinationFilePath.getParentFile().mkdirs();
+
+
+
+					//if the entry is directory, leave it. Otherwise extract it.
+
+					if(entry.isDirectory())
+
+					{
+
+						continue;
+
+					}
+
+					else
+
+					{
+
+						System.out.println("Extracting " + destinationFilePath);
+
+
+
+						/*
+
+						 * Get the InputStream for current entry
+
+						 * of the zip file using
+
+						 * 
+
+						 * InputStream getInputStream(Entry entry) method.
+
+						 */
+
+						BufferedInputStream bis = new BufferedInputStream(zipFile
+
+																		  .getInputStream(entry));
+
+
+
+						int b;
+
+						byte buffer[] = new byte[1024];
+
+
+
+						/*
+
+						 * read the current entry from the zip file, extract it
+
+						 * and write the extracted file.
+
+						 */
+
+						FileOutputStream fos = new FileOutputStream(destinationFilePath);
+
+						BufferedOutputStream bos = new BufferedOutputStream(fos,
+
+																			1024);
+
+
+
+						while ((b = bis.read(buffer, 0, 1024)) != -1) {
+
+							bos.write(buffer, 0, b);
+
+						}
+
+
+
+						//flush the output stream and close it.
+
+						bos.flush();
+
+						bos.close();
+
+
+
+						//close the input stream.
+
+						bis.close();
+
+					}
+
+				}
+
+			}
+
+			catch(IOException ioe)
+
+			{
+
+				System.out.println("IOError :" + ioe);
+
+			}
+
+
+
+        
+		}
 	
 }
