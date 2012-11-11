@@ -12,7 +12,9 @@ import android.view.View.*;
 import android.widget.*;
 import java.io.*;
 import java.util.*;
+import java.util.regex.*;
 import java.util.zip.*;
+
 import java.lang.Process;
 
 public class AnthraxFlasherHome extends Activity {
@@ -37,12 +39,19 @@ public class AnthraxFlasherHome extends Activity {
 	private String s2wEnd;
 	private boolean vsync;
 	private boolean mpdec;
-	private boolean reboot;
+	private boolean dalvik;
 
 	SharedPreferences preferences;
 	SharedPreferences.Editor editor;
 	ProgressDialog pd;
 
+	private String cmdline;
+	String device = android.os.Build.DEVICE;
+	String partition;
+	
+	boolean RESULT = true;
+	String error;
+	
 	
 	
 	private class ExtractKernel extends AsyncTask<String, Void, Object> {
@@ -60,6 +69,8 @@ public class AnthraxFlasherHome extends Activity {
 				File temp = new File(zipPath);
 
 				temp.mkdir();
+				
+				Runtime.getRuntime().exec("chmod 777 " + temp);
 
 				System.out.println(zipPath + " created");
 
@@ -163,57 +174,24 @@ public class AnthraxFlasherHome extends Activity {
 		}
 
 	}
-	private class FlashKernel extends AsyncTask<Void, Integer, Void> {
+	
+	private class Reboot extends AsyncTask<Void, Integer, Void> {
 
 		@Override
 		protected Void doInBackground(Void... args) {
-			
+
 			Process localProcess;
 			try
 			{
 				localProcess = Runtime.getRuntime().exec("su");
 
 				DataOutputStream localDataOutputStream = new DataOutputStream(localProcess.getOutputStream());
-				//backup and remove thermald
-				localDataOutputStream.writeBytes("mv /system/bin/thermald /system/bin/thermald.backup\n");
-				publishProgress(1);
-				//if selected backup remove mpdecision
-				if(mpdec==true){
-					localDataOutputStream.writeBytes("mv /system/bin/mpdecision /system/bin/mpdecision.backup\n");	
-				}
-				publishProgress(2);
-				//pull boot.img
-				localDataOutputStream.writeBytes("/data/data/rs.pedjaapps.anthrax.flasher/files/dd if=/dev/block/mmcblk0p20 of=/data/data/rs.pedjaapps.anthrax.flasher/files/tmp/boot.img\n");
-				publishProgress(3);
-				//unpack boot.img
-				localDataOutputStream.writeBytes("/data/data/rs.pedjaapps.anthrax.flasher/files/unpackbootimg /data/data/rs.pedjaapps.anthrax.flasher/files/tmp/boot.img /data/data/rs.pedjaapps.anthrax.flasher/files/tmp/\n");
-				publishProgress(4);
-				//set cmdline
-				////set maxkhz
-				try
-				{
-
-					File myFile = new File("/data/data/rs.pedjaapps.anthrax.flasher/files/temp/boot.img-cmdline");
-					FileInputStream fIn = new FileInputStream(myFile);
-					BufferedReader myReader = new BufferedReader(
-						new InputStreamReader(fIn));
-					String aDataRow = "";
-					String aBuffer = "";
-					while ((aDataRow = myReader.readLine()) != null)
-					{
-						aBuffer += aDataRow + "\n";
-					}
-					//iscVa = aBuffer;
-					myReader.close();
-
-
-				}
-				catch (Exception e)
-				{
-					//iscVa = "offline";
-				}
+			
 				
-				
+				localDataOutputStream.writeBytes("/data/data/rs.pedjaapps.anthrax.flasher/files/reboot\n");
+
+			
+
 				localDataOutputStream.writeBytes("exit\n");
 				localDataOutputStream.flush();
 				localDataOutputStream.close();
@@ -230,8 +208,455 @@ public class AnthraxFlasherHome extends Activity {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
+
+
+
+			return null;
+		}
+
+	
+
+	}
+	
+	private class FlashKernel extends AsyncTask<Void, Integer, Void> {
+
+		@Override
+		protected Void doInBackground(Void... args) {
 			
-			
+			Process localProcess;
+			try
+			{
+				localProcess = Runtime.getRuntime().exec("su");
+
+				DataOutputStream localDataOutputStream = new DataOutputStream(localProcess.getOutputStream());
+				//backup and remove thermald
+				publishProgress(0);
+				localDataOutputStream.writeBytes("mv /system/bin/thermald /system/bin/thermald.backup\n");
+				localDataOutputStream.writeBytes("exit\n");
+				localDataOutputStream.flush();
+				localDataOutputStream.close();
+				localProcess.waitFor();
+				localProcess.destroy();
+			}
+			catch (IOException io)
+			{
+				// TODO Auto-generated catch block
+
+				error = io.getMessage();
+				RESULT=false;
+			}
+			catch (InterruptedException ie)
+			{
+				// TODO Auto-generated catch block
+				error = ie.getMessage();
+				RESULT=false;
+			}
+			try
+			{
+				localProcess = Runtime.getRuntime().exec("su");
+
+				DataOutputStream localDataOutputStream = new DataOutputStream(localProcess.getOutputStream());
+				
+				//if selected backup remove mpdecision
+				
+				if(mpdec==true){
+					publishProgress(1);
+					localDataOutputStream.writeBytes("mv /system/bin/mpdecision /system/bin/mpdecision.backup\n");	
+				}
+				localDataOutputStream.writeBytes("exit\n");
+				localDataOutputStream.flush();
+				localDataOutputStream.close();
+				localProcess.waitFor();
+				localProcess.destroy();
+			}
+			catch (IOException io)
+			{
+				// TODO Auto-generated catch block
+
+				error = io.getMessage();
+				RESULT=false;
+			}
+			catch (InterruptedException ie)
+			{
+				// TODO Auto-generated catch block
+				error = ie.getMessage();
+				RESULT=false;
+			}
+			try
+			{
+				localProcess = Runtime.getRuntime().exec("su");
+
+				DataOutputStream localDataOutputStream = new DataOutputStream(localProcess.getOutputStream());
+				
+				//pull boot.img
+				publishProgress(2);
+				localDataOutputStream.writeBytes("/data/data/rs.pedjaapps.anthrax.flasher/files/dd if="+partition+" of=/data/data/rs.pedjaapps.anthrax.flasher/files/temp/boot.img\n");
+				localDataOutputStream.writeBytes("exit\n");
+				localDataOutputStream.flush();
+				localDataOutputStream.close();
+				localProcess.waitFor();
+				localProcess.destroy();
+
+			}
+			catch (IOException io)
+			{
+				// TODO Auto-generated catch block
+
+				error = io.getMessage();
+				RESULT=false;
+			}
+			catch (InterruptedException ie)
+			{
+				// TODO Auto-generated catch block
+				error = ie.getMessage();
+				RESULT=false;
+			}
+			try
+			{
+				localProcess = Runtime.getRuntime().exec("su");
+
+				DataOutputStream localDataOutputStream = new DataOutputStream(localProcess.getOutputStream());
+				
+				//unpack boot.img
+				publishProgress(3);
+				localDataOutputStream.writeBytes("/data/data/rs.pedjaapps.anthrax.flasher/files/unpackbootimg /data/data/rs.pedjaapps.anthrax.flasher/files/temp/boot.img /data/data/rs.pedjaapps.anthrax.flasher/files/temp/\n");
+				localDataOutputStream.writeBytes("exit\n");
+				localDataOutputStream.flush();
+				localDataOutputStream.close();
+				localProcess.waitFor();
+				localProcess.destroy();
+
+			}
+			catch (IOException io)
+			{
+				// TODO Auto-generated catch block
+
+				error = io.getMessage();
+				RESULT=false;
+			}
+			catch (InterruptedException ie)
+			{
+				// TODO Auto-generated catch block
+				error = ie.getMessage();
+				RESULT=false;
+			}
+			try
+			{
+				localProcess = Runtime.getRuntime().exec("su");
+
+				DataOutputStream localDataOutputStream = new DataOutputStream(localProcess.getOutputStream());
+				
+				//set cmdline
+				publishProgress(4);
+				localDataOutputStream.writeBytes("sh /data/data/rs.pedjaapps.anthrax.flasher/files/cmdline.sh " + cpuMin + " " + cpuMax + " " + cpuScrOff + " " + gpu3d + " " + gpu2d + " " + cpuGov+"\n");
+				localDataOutputStream.writeBytes("exit\n");
+				localDataOutputStream.flush();
+				localDataOutputStream.close();
+				localProcess.waitFor();
+				localProcess.destroy();
+
+			}
+			catch (IOException io)
+			{
+				// TODO Auto-generated catch block
+
+				error = io.getMessage();
+				RESULT=false;
+			}
+			catch (InterruptedException ie)
+			{
+				// TODO Auto-generated catch block
+				error = ie.getMessage();
+				RESULT=false;
+			}
+			try
+			{
+				localProcess = Runtime.getRuntime().exec("su");
+
+				DataOutputStream localDataOutputStream = new DataOutputStream(localProcess.getOutputStream());
+				
+				//set s2w
+				publishProgress(5);
+				localDataOutputStream.writeBytes("sh /data/data/rs.pedjaapps.anthrax.flasher/files/sweep2wake.sh " + s2w + " " + s2wStart + " " + s2wEnd +"\n");
+				localDataOutputStream.writeBytes("exit\n");
+				localDataOutputStream.flush();
+				localDataOutputStream.close();
+				localProcess.waitFor();
+				localProcess.destroy();
+
+			}
+			catch (IOException io)
+			{
+				// TODO Auto-generated catch block
+
+				error = io.getMessage();
+				RESULT=false;
+			}
+			catch (InterruptedException ie)
+			{
+				// TODO Auto-generated catch block
+				error = ie.getMessage();
+				RESULT=false;
+			}
+			try
+			{
+				localProcess = Runtime.getRuntime().exec("su");
+
+				DataOutputStream localDataOutputStream = new DataOutputStream(localProcess.getOutputStream());
+				
+		    	//set scheduler
+				publishProgress(6);
+				localDataOutputStream.writeBytes("sh /data/data/rs.pedjaapps.anthrax.flasher/files/scheduler.sh " + scheduler+"\n");
+				localDataOutputStream.writeBytes("exit\n");
+				localDataOutputStream.flush();
+				localDataOutputStream.close();
+				localProcess.waitFor();
+				localProcess.destroy();
+
+			}
+			catch (IOException io)
+			{
+				// TODO Auto-generated catch block
+
+				error = io.getMessage();
+				RESULT=false;
+			}
+			catch (InterruptedException ie)
+			{
+				// TODO Auto-generated catch block
+				error = ie.getMessage();
+				RESULT=false;
+			}
+			try
+			{
+				localProcess = Runtime.getRuntime().exec("su");
+
+				DataOutputStream localDataOutputStream = new DataOutputStream(localProcess.getOutputStream());
+				
+				//set init.d
+				publishProgress(7);
+				int vs;
+				int mp;
+				if(vsync==true)
+				{
+					vs=1;
+				}
+				else{
+					vs=0;
+				}
+				if(mpdec==true)
+				{
+					mp=1;
+				}
+				else{
+					mp=0;
+				}
+				localDataOutputStream.writeBytes("sh /data/data/rs.pedjaapps.anthrax.flasher/files/features.sh " + vs + " " + mp + "\n");
+				localDataOutputStream.writeBytes("exit\n");
+				localDataOutputStream.flush();
+				localDataOutputStream.close();
+				localProcess.waitFor();
+				localProcess.destroy();
+
+			}
+			catch (IOException io)
+			{
+				// TODO Auto-generated catch block
+
+				error = io.getMessage();
+				RESULT=false;
+			}
+			catch (InterruptedException ie)
+			{
+				// TODO Auto-generated catch block
+				error = ie.getMessage();
+				RESULT=false;
+			}
+			try
+			{
+				localProcess = Runtime.getRuntime().exec("su");
+
+				DataOutputStream localDataOutputStream = new DataOutputStream(localProcess.getOutputStream());
+				
+			// make new boot.img
+				publishProgress(8);
+				localDataOutputStream.writeBytes("sh /data/data/rs.pedjaapps.anthrax.flasher/files/mkbootimg.sh " +device +"\n");
+				localDataOutputStream.writeBytes("exit\n");
+				localDataOutputStream.flush();
+				localDataOutputStream.close();
+				localProcess.waitFor();
+				localProcess.destroy();
+				
+			}
+			catch (IOException io)
+			{
+				// TODO Auto-generated catch block
+
+				error = io.getMessage();
+				RESULT=false;
+				
+			}
+			catch (InterruptedException ie)
+			{
+				// TODO Auto-generated catch block
+				error = ie.getMessage();
+				RESULT=false;
+				
+			}
+			try
+			{
+				localProcess = Runtime.getRuntime().exec("su");
+
+				DataOutputStream localDataOutputStream = new DataOutputStream(localProcess.getOutputStream());
+				
+			//flash boot.img
+				publishProgress(9);
+				localDataOutputStream.writeBytes("/data/data/rs.pedjaapps.anthrax.flasher/files/flash_image " + partition + " " + "/data/data/rs.pedjaapps.anthrax.flasher/files/temp/newboot.img" + "\n");
+				localDataOutputStream.writeBytes("exit\n");
+				localDataOutputStream.flush();
+				localDataOutputStream.close();
+				localProcess.waitFor();
+				localProcess.destroy();
+
+			}
+			catch (IOException io)
+			{
+				// TODO Auto-generated catch block
+
+				error = io.getMessage();
+				RESULT=false;
+			}
+			catch (InterruptedException ie)
+			{
+				// TODO Auto-generated catch block
+				error = ie.getMessage();
+				RESULT=false;
+			}
+			try
+			{
+				localProcess = Runtime.getRuntime().exec("su");
+
+				DataOutputStream localDataOutputStream = new DataOutputStream(localProcess.getOutputStream());
+				
+			//delete old modules
+				publishProgress(10);
+				localDataOutputStream.writeBytes("rm /system/lib/modules/*\n");
+				localDataOutputStream.writeBytes("exit\n");
+				localDataOutputStream.flush();
+				localDataOutputStream.close();
+				localProcess.waitFor();
+				localProcess.destroy();
+
+			}
+			catch (IOException io)
+			{
+				// TODO Auto-generated catch block
+
+				error = io.getMessage();
+				RESULT=false;
+			}
+			catch (InterruptedException ie)
+			{
+				// TODO Auto-generated catch block
+				error = ie.getMessage();
+				RESULT=false;
+			}
+			try
+			{
+				localProcess = Runtime.getRuntime().exec("su");
+
+				DataOutputStream localDataOutputStream = new DataOutputStream(localProcess.getOutputStream());
+				
+			//push new modules
+				publishProgress(11);
+				localDataOutputStream.writeBytes("cp /data/data/rs.pedjaapps.anthrax.flasher/files/temp/modules/" +device+"/* /system/lib/modules/\n");
+				localDataOutputStream.writeBytes("cp /data/data/rs.pedjaapps.anthrax.flasher/files/temp/modules/common/* /system/lib/modules/\n");
+				localDataOutputStream.writeBytes("chmod 644 /system/lib/modules/*\n");
+				localDataOutputStream.writeBytes("exit\n");
+				localDataOutputStream.flush();
+				localDataOutputStream.close();
+				localProcess.waitFor();
+				localProcess.destroy();
+
+			}
+			catch (IOException io)
+			{
+				// TODO Auto-generated catch block
+
+				error = io.getMessage();
+				RESULT=false;
+			}
+			catch (InterruptedException ie)
+			{
+				// TODO Auto-generated catch block
+				error = ie.getMessage();
+				RESULT=false;
+			}
+			try
+			{
+				localProcess = Runtime.getRuntime().exec("su");
+
+				DataOutputStream localDataOutputStream = new DataOutputStream(localProcess.getOutputStream());
+				
+			//wipe dalvik cache if enabled
+				if(dalvik==true){
+				publishProgress(12);
+				localDataOutputStream.writeBytes("rm /data/dalvik-cache/*\n");
+				}
+				
+				localDataOutputStream.writeBytes("exit\n");
+				localDataOutputStream.flush();
+				localDataOutputStream.close();
+				localProcess.waitFor();
+				localProcess.destroy();
+				
+			}
+			catch (IOException io)
+			{
+				// TODO Auto-generated catch block
+				
+				error = io.getMessage();
+				RESULT=false;
+			}
+			catch (InterruptedException ie)
+			{
+				// TODO Auto-generated catch block
+				error = ie.getMessage();
+				RESULT=false;
+			}
+			try
+			{
+				localProcess = Runtime.getRuntime().exec("su");
+
+				DataOutputStream localDataOutputStream = new DataOutputStream(localProcess.getOutputStream());
+
+				//cleen temp dir
+				
+					publishProgress(13);
+						localDataOutputStream.writeBytes("rm -r /data/data/rs.pedjaapps.anthrax.flasher/files/temp\n");
+				
+
+				localDataOutputStream.writeBytes("exit\n");
+				localDataOutputStream.flush();
+				localDataOutputStream.close();
+				localProcess.waitFor();
+				localProcess.destroy();
+
+			}
+			catch (IOException io)
+			{
+				// TODO Auto-generated catch block
+
+				error = io.getMessage();
+				RESULT=false;
+			}
+			catch (InterruptedException ie)
+			{
+				// TODO Auto-generated catch block
+				error = ie.getMessage();
+				RESULT=false;
+			}
+		//	RESULT=true;
 			
 			return null;
 		}
@@ -242,37 +667,137 @@ public class AnthraxFlasherHome extends Activity {
 			switch(values[0]){
 			case 0:
 				pd.setMessage("Backing up and removing thermald");
-				pd.setProgress(1);
+				pd.setProgress(0);
 				break;
 			case 1:
 				pd.setMessage("Backing up and removing mpdecision");
-				pd.setProgress(2);
+				pd.setProgress(1);
 				break;
 			case 2:
 				pd.setMessage("Pulling boot.img");
-				pd.setProgress(3);
+				pd.setProgress(2);
 				break;
 			case 3:
 				pd.setMessage("Unpacking boot.img");
-				pd.setProgress(4);
+				pd.setProgress(3);
 				break;
 			case 4:
-				pd.setMessage("5");
+				pd.setMessage("Setting cmdline options");
+				pd.setProgress(4);
+				break;
+			case 5:
+				pd.setMessage("Setting s2w in cmdline");
 				pd.setProgress(5);
+				break;
+			case 6:
+				pd.setMessage("Setting scheduler in cmdline");
+				pd.setProgress(6);
+				break;
+			case 7:
+				pd.setMessage("Creating init.d script and setting options");
+				pd.setProgress(7);
+				break;
+			case 8:
+				pd.setMessage("Creating new boot.img");
+				pd.setProgress(8);
+				break;
+			case 9:
+				pd.setMessage("Flashing new boot.img");
+				pd.setProgress(9);
+				break;
+			case 10:
+				pd.setMessage("Deleting Old modules");
+				pd.setProgress(10);
+				break;
+			case 11:
+				pd.setMessage("Writing new modules");
+				pd.setProgress(11);
+				break;
+			case 12:
+				pd.setMessage("Wiping dalvik-cache");
+				pd.setProgress(12);
+				break;
+			case 13:
+				pd.setMessage("Cleaning up");
+				pd.setProgress(13);
 				break;
 			}
 			super.onProgressUpdate();
 		}
 
 		@Override
-		protected void onPostExecute(Void result) {
+		protected void onPostExecute(Void res) {
 			pd.dismiss();
+			if(RESULT){
+			AlertDialog.Builder builder = new AlertDialog.Builder(
+				AnthraxFlasherHome.this);
+
+				if(dalvik==true){
+			builder.setMessage("Device will reboot now!");
+					builder.setPositiveButton("OK",
+						new DialogInterface.OnClickListener() {
+							@Override
+							public void onClick(DialogInterface dialog, int which) {
+								new Reboot().execute();
+							}
+						});
+			}
+			else{
+				builder.setMessage("Reboot now!");
+				builder.setPositiveButton("Reboot",
+					new DialogInterface.OnClickListener() {
+						@Override
+						public void onClick(DialogInterface dialog, int which) {
+							new Reboot().execute();
+						}
+					});
+					
+				builder.setNegativeButton("Dont Reboot",
+					new DialogInterface.OnClickListener() {
+						@Override
+						public void onClick(DialogInterface dialog, int which) {
+						
+						}
+					});
+			}
 			
+		
+			
+			AlertDialog alert = builder.create();
+			alert.setCanceledOnTouchOutside(false);
+			alert.setCancelable(false);
+
+			alert.show();
+			}
+			else{
+				AlertDialog.Builder builder = new AlertDialog.Builder(
+					AnthraxFlasherHome.this);
+
+					builder.setTitle("Flashing failed");
+					builder.setMessage(error);
+					builder.setPositiveButton("OK",
+						new DialogInterface.OnClickListener() {
+							@Override
+							public void onClick(DialogInterface dialog, int which) {
+								finish();
+							}
+						});
+				
+				
+
+
+
+				AlertDialog alert = builder.create();
+				alert.setCanceledOnTouchOutside(false);
+				alert.setCancelable(false);
+
+				alert.show();
+			}
 		}
 		@Override
 		protected void onPreExecute(){
 			pd = new ProgressDialog(AnthraxFlasherHome.this);
-			pd.setMax(12);
+			pd.setMax(13);
 			pd.setIndeterminate(false);
 			pd.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
 			pd.setMessage("Preparing for flashing kernel");
@@ -310,10 +835,17 @@ public class AnthraxFlasherHome extends Activity {
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		replaceValue("test","testssss");
+		
+		
 		checkPhone();
 		setContentView(R.layout.anthrax_home);
 		// getActionBar().setDisplayHomeAsUpEnabled(true);
+		if(device.equals("shooteru") || device.equals("pyramid")){
+			partition = "/dev/block/mmcblk0p20";
+		}
+		if(device.equals("shooter")){
+			partition = "/dev/block/mmcblk0p21";
+		}
 		preferences = PreferenceManager.getDefaultSharedPreferences(this);
 		editor = preferences.edit();
 		kernelFile = (TextView) findViewById(R.id.textView2);
@@ -337,6 +869,16 @@ public class AnthraxFlasherHome extends Activity {
 			}
 
 		});
+		
+		flashKernel.setOnClickListener(new OnClickListener() {
+
+				@Override
+				public void onClick(View v) {
+				new FlashKernel().execute();
+
+				}
+
+			});
 
 		setupKernel.setOnClickListener(new OnClickListener() {
 
@@ -351,7 +893,7 @@ public class AnthraxFlasherHome extends Activity {
 
 		});
 	}
-
+	
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 		// TODO Auto-generated method stub
@@ -390,7 +932,7 @@ public class AnthraxFlasherHome extends Activity {
 				s2wEnd = data.getStringExtra("s2wEnd");
 				vsync = data.getBooleanExtra("vsync", true);
 				mpdec = data.getBooleanExtra("mpdec", true);
-				reboot = data.getBooleanExtra("reboot", true);
+				dalvik = data.getBooleanExtra("dalvik", true);
 			}
 			break;
 
@@ -413,21 +955,7 @@ public class AnthraxFlasherHome extends Activity {
 		return super.onOptionsItemSelected(item);
 	}
 
-	String mFileContents = "test=\"terst\"";
-	private void replaceValue(String name, String newValue) {
-	    int nameIndex = mFileContents.indexOf(name);
-	    int equalSignIndex = mFileContents.indexOf("=", nameIndex);
-	    int oldValueIndex = equalSignIndex + 2;
-	    int oldValueLength = mFileContents.indexOf("\"", oldValueIndex);
-	    String oldValue = mFileContents.substring(oldValueIndex, oldValueLength);
 
-	    String firstHalf = mFileContents.substring(0, oldValueIndex -1);
-	    String secondHalf = mFileContents.substring(oldValueIndex);
-	    secondHalf.replaceFirst(oldValue, newValue);
-
-	    mFileContents = firstHalf + secondHalf;
-	    System.out.println(mFileContents);
-	}
 	
 	
 	public void checkPhone() {

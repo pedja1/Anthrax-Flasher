@@ -27,7 +27,7 @@ public class AnthraxFlasherSettings extends Activity {
 	private String s2wStart;
 	private String s2wEnd;
 	
-	private Switch reboot;
+	private Switch dalvik;
 	private Switch vsync;
 	private Switch mpdec;
 
@@ -48,7 +48,7 @@ public class AnthraxFlasherSettings extends Activity {
 		
 		vsync = (Switch)findViewById(R.id.switch1);
 		mpdec = (Switch)findViewById(R.id.switch2);
-		reboot = (Switch)findViewById(R.id.switch3);
+		dalvik = (Switch)findViewById(R.id.switch3);
 		
 		String[] cpuMinFreqs = {"192 MHz - HTC Default on OLD kernels", "384 MHz - Anthrax Recommended, HTC Default on NEW kernels", "432 MHz"};
 		String[] cpuMaxFreqs = {"1188 MHz - HTC STOCK", 
@@ -543,7 +543,7 @@ public class AnthraxFlasherSettings extends Activity {
             case R.id.save:
             	boolean vs = true;
             	boolean mp = true;
-            	boolean rb = true;
+            	boolean dv = true;
             	if(vsync.isChecked()){
             		vs = true;
             	}
@@ -556,11 +556,11 @@ public class AnthraxFlasherSettings extends Activity {
             	else{
             		mp = false;
             	}
-            	if(reboot.isChecked()){
-            		rb = true;
+            	if(dalvik.isChecked()){
+            		dv = true;
             	}
             	else{
-            		rb = false;
+            		dv = false;
             	}
             	
             	Intent intent = new Intent();
@@ -576,7 +576,7 @@ public class AnthraxFlasherSettings extends Activity {
             	intent.putExtra("s2wEnd",s2wEnd);
             	intent.putExtra("vsync",vs);
             	intent.putExtra("mpdec",mp);
-            	intent.putExtra("reboot",rb);
+            	intent.putExtra("dalvik",dv);
             	setResult(RESULT_OK, intent);
             	
             	finish();

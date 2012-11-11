@@ -19,7 +19,7 @@
     <string name="s2wEnd">Default Sweep2Wake End Point</string>
     <string name="vsync">INIT.D: PANEL: VSYNC</string>
     <string name="mpdec">INIT.D: kernel based MPDECISION</string>
-    <string name="reboot">Reboot after installation?</string>
+    <string name="dalvik">Wipe Dalvik Cache?</string>
     <string name="select_kernel">Select Kernel File*</string>
     <string name="setup_kernel">Setup Kernel</string>
     <string name="flash_kernel">Flash Kernel</string>
